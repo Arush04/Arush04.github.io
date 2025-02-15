@@ -1,84 +1,161 @@
+/* Base styles */
 body {
-	font-family: "Fira Code", monospace;
-	display: flex;
-	justify-content: center;
-	align-items: center;
-	background-color: #f5f5f5;
+    font-family: "Fira Code", monospace;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-color: #f5f5f5;
+    min-height: 100vh;
+    margin: 0;
+    padding: 20px;
+    box-sizing: border-box;
 }
 
 .container {
-	width: 80%;
-	background: white;
-	border-radius: 20px;
-	border: 2px solid black;
-	padding: 30px;
-	box-shadow: 5px 5px 10px rgba(0, 0, 0, 0.1);
-	margin-top: auto;
+    max-width: 1500px;
+    width: 100%;
+    background: white;
+    border-radius: 20px;
+    border: 2px solid black;
+    padding: 30px;
+    box-shadow: 5px 5px 10px rgba(0, 0, 0, 0.1);
+    margin: 20px auto;
+    box-sizing: border-box;
 }
 
 .header {
-	display: flex;
-	justify-content: space-between;
-	text-align: center;
-	padding-bottom: 10px;
+    display: flex;
+    justify-content: space-between;
+    text-align: center;
+    padding-bottom: 10px;
+    flex-wrap: wrap;
+    gap: 15px;
 }
 
 .links {
-	display: flex;
-	gap: 30px;
-	font-size: 20px;
+    display: flex;
+    gap: 30px;
+    font-size: 20px;
+    flex-wrap: wrap;
 }
 
 .section {
-	border-top: 2px solid black;
-	padding: 10px 0;
-	font-size: 28px;
-	font-weight: bold;
+    border-top: 2px solid black;
+    padding: 10px 0;
+    font-size: 28px;
+    font-weight: bold;
 }
 
 .experience {
-	margin-top: 20px;
+    margin-top: 20px;
 }
 
 .job {
-	display: flex;
-	align-items: flex-start;
-	margin-bottom: 20px;
-	gap: 15px;
+    display: flex;
+    align-items: flex-start;
+    margin-bottom: 20px;
+    gap: 15px;
+    flex-wrap: wrap;
 }
 
 .company {
-	display: flex;
-	align-items: center;
-	gap: 10px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
 }
 
 .company-logo {
-	width: 50px;
-	height: 50px;
+    width: 50px;
+    height: 50px;
+    object-fit: contain;
 }
 
 .job-details {
-	flex-grow: 1;
+    flex-grow: 1;
+    min-width: 250px;
 }
 
 .job h4 {
-	margin: 0;
-	font-size: 18px;
-	font-weight: bold;
+    margin: 0;
+    font-size: 18px;
+    font-weight: bold;
 }
 
 .job p {
-	margin: 2px 0;
-	font-size: 14px;
+    margin: 2px 0;
+    font-size: 14px;
 }
 
 .job-timeline {
-	border-left: 2px solid #ccc;
-	padding-left: 15px;
-	margin-left: 30px;
+    border-left: 2px solid #ccc;
+    padding-left: 15px;
+    margin-left: 30px;
 }
 
 .projects {
-	margin-top: 20px;
+    margin-top: 20px;
+}
+
+/* Responsive Design */
+@media screen and (max-width: 768px) {
+    .container {
+        padding: 20px;
+        margin: 10px;
+        border-radius: 15px;
+    }
+
+    .header {
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+    }
+
+    .links {
+        gap: 15px;
+        justify-content: center;
+        font-size: 16px;
+    }
+
+    .section {
+        font-size: 24px;
+    }
+
+    .job {
+        flex-direction: column;
+    }
+
+    .job-timeline {
+        margin-left: 15px;
+    }
+}
+
+@media screen and (max-width: 480px) {
+    .container {
+        padding: 15px;
+        margin: 5px;
+        border-radius: 10px;
+    }
+
+    .links {
+        gap: 10px;
+        font-size: 14px;
+    }
+
+    .section {
+        font-size: 20px;
+    }
+
+    .company-logo {
+        width: 40px;
+        height: 40px;
+    }
+
+    .job h4 {
+        font-size: 16px;
+    }
+
+    .job p {
+        font-size: 12px;
+    }
 }
