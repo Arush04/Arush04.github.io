@@ -137,9 +137,19 @@ body {
         border-radius: 10px;
     }
 
+    .header {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+    }
+
     .links {
+        display: flex;
+        flex-direction: column;
         gap: 10px;
         font-size: 14px;
+        align-items: center;
     }
 
     .section {
@@ -149,6 +159,7 @@ body {
     .company-logo {
         width: 40px;
         height: 40px;
+        margin-bottom: 10px;
     }
 
     .job h4 {
