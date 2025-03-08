@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blogs</title>
+    <link rel="stylesheet" href="css/styles_blog_pages.css">
+	<link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism.min.css" rel="stylesheet">	<script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="nav-buttons left">
+                <a href="blogs.html" class="home-btn">
+                    <img src="images/back_arrow.ico" alt="Back" class="back-icon">
+                </a>
+            </div>
+            <h1>Finetune LLM with QLoRA</h1>
+        </div>
+        
+		<div class="image-container" align="center">
+			<img src="images/blogs/llm_finetune.png" alt="Finetune OVerview" class="head image">
+		</div>
+        
+		<div class="blog-content">
+            <h2>Introduction</h2>
+            <p>Large Language Models (LLMs) have become an integral part of our daily lives, powering everything from chatbots to code generation tools. However, these models are typically trained for general purposes, and in many cases, we may need them to specialize in a particular domain or use case. This is where LLM fine-tuning comes into play, allowing us to adapt these powerful models to our specific needs. The challenge, however, is that fine-tuning such massive models requires substantial computational resources—far beyond what is available for free. To address this, researchers have developed techniques like LoRA (Low-Rank Adaptation) and its optimized variant, QLoRA (Quantized LoRA), which significantly reduce the resource requirements for fine-tuning while maintaining model performance. In this blog, we’ll explore how QLoRA enables efficient fine-tuning of LLMs on limited hardware.</p>
+
+            <h2>LoRA and QLoRA</h2>
+			<div class="image-container" align="center">
+				<img src="images/blogs/nn_architecture.png" alt="NN Architecture">
+			</div>
+			<br>
+			<h3>LoRA :</h3>
+			<p>It works by adding a smaller number of new weights to the model, which are then trained, rather than retraining the entire model or adding new layers for new tasks. It keeps the original model unchanged and adds small, changeable parts to each layer of the model. This significantly reduces the trainable parameters of the model and reduces the GPU memory requirement for the training process.</p>
+			<strong> Low Rank Matrices: </strong>Low Rank Matrices are very important with respect to LoRA working. A matrix is of lower rank if its rank is less than the maximum possible given its size. For example, in a 3x3 matrix, if the rank is less than 3, it's a lower rank matrix.  Lower rank matrix helps in compressing the data while preserving as much information as possible.
+			<p>
+			Large models have a lot of parameters. For example, GPT-3 has 175 billion parameters. These parameters are just numbers stored in matrices. Storing them requires a lot of storage.
+			Full fine-tuning means all the parameters will be trained, and this will require an extraordinary amount of compute resources that can easily cost in the millions of dollars for a model size like GPT.
+			Unlike traditional fine-tuning that requires adjusting the entire model, LoRA focuses on modifying a smaller subset of parameters (lower-rank matrices), thereby reducing computational and memory overhead.
+			</p>
+			<strong>Reducing the matrix to low rank:</strong>
+			<p>In transformer models, the weight matrix \( W \) in a linear layer transforms input features \( x \): \( y = Wx \)</p>
+            <p>where:</p>
+            <ul>
+                <li>\( W \in \mathbb{R}^{d \times k} \) (Full-rank matrix)</li>
+                <li>\( x \in \mathbb{R}^{k} \) (Input features)</li>
+            </ul>
+            <p>During fine-tuning, updating \( W \) requires \( d \times k \) trainable parameters, which is costly.</p>
+            
+            <strong>LoRA Optimization</strong>
+            <p>Instead of updating \( W \) directly, LoRA introduces two small trainable matrices \( A \) and \( B \) of rank \( r \): \(\Delta W = BA \)</p>
+            <p>where:</p>
+            <ul>
+                <li>\( A \in \mathbb{R}^{d \times r} \) (Tall and thin)</li>
+                <li>\( B \in \mathbb{R}^{r \times k} \) (Short and wide)</li>
+                <li>\( r \ll \min(d,k) \) (Much smaller rank)</li>
+            </ul>
+            <p>Since \( \Delta W \) is the product of two low-rank matrices, it captures model updates with far fewer parameters.</p>
+            
+            <strong>Parameter Reduction with LoRA</strong>
+            <p>Instead of \( d \times k \) parameters in full fine-tuning, LoRA requires: \(r(d + k)\)</p>
+            <p>For example, if:</p>
+            <ul>
+                <li>\( d = 4096, k = 4096 \)</li>
+                <li>Full fine-tuning requires: 16.7M parameters</li>
+                <li>With \( r = 64 \), LoRA only trains: 524K parameters</li>
+            </ul>
+
+			<h3>QLoRA: </h3>
+			<p>QLoRA represents a more memory-efficient iteration of LoRA. QLoRA takes LoRA a step further by also quantizing the weights of the LoRA adapters (smaller matrices) to lower precision (e.g., 4-bit instead of 8-bit).</p>
+			<strong>Core Idea: </strong>
+			<ol>
+			<li>Storing model weights in 4-bit precision</li>
+			<li>Converting them to 16-bit only when needed for computations</li>
+			<li>Using special techniques to maintain accuracy despite the compression</li>
+			</ol>
+			<div class="image-container" align="center">
+				<img src="images/blogs/qlora.png" alt="Qlora">
+			</div>
+			<strong>Main Techniques</strong>
+			<ol>
+				<li><b>NormalFloat(NF4) Quantization:</b> 4-bit NormalFloat Quantization is a method designed to efficiently quantize the weights of neural networks into a 4-bit format. NormalFloat data type is designed to optimally quantize data, particularly for use in neural networks and based on a method called “Quantile Quantization” which ensures that each bin (or category) in the quantization process has an equal number of values from the input data.</li>
+				<br>
+				<li><b>Double Quantization:</b> Double quantization is the process of quantizing the quantization constant to reduce the memory down further to save these constant.</li>
+				<br>
+				<li><b>Paged Quantization:</b> When training large models with billions of parameters GPU’s running out of memory is common problem. Paged optimizers are used to address these memory spikes that occur during model training. NVIDIA unified memory facilitates automatic page-to-page transfers between the CPU and GPU, similar to regular memory paging between CPU RAM and the disk. When the GPU runs out of memory, these optimizer states are moved to the CPU RAM and are transferred back into GPU memory when needed.</li>
+			</ol>
+			<h2>Implementation</h2>
+			<p>Much of the below code is just important steps and configurations for the training. For entire code <a href="https://github.com/Arush04/qlora_tuned_model">see here</a></p>
+			<ul>
+			<li>Loading dataset:</li>
+			<pre class="compact-code"><code>dataset = load_dataset("Amod/mental_health_counseling_conversations")<br>train_test_split = dataset["train"].train_test_split(test_size=0.3, seed=42)
+test_validation_split = train_test_split["test"].train_test_split(test_size=1/3, seed=42)
+
+dataset_train = train_test_split["train"]
+dataset_validation = test_validation_split["train"]
+dataset_test = test_validation_split["test"]</code></pre>
+			<br>
+			<li>Creating Quantization Configuration</li>
+			<pre class="compact-code"><code>compute_dtype = getattr(torch, "float16")
+bnb_config = BitsAndBytesConfig(
+    load_in_4bit=True,
+    bnb_4bit_quant_type='nf4',
+    bnb_4bit_compute_dtype=compute_dtype,
+    bnb_4bit_use_double_quant=False,
+)</code></pre>
+			<br>
+			<li>Loading Pre-Trained model and tokenizer</li>
+			<pre class="compact-code"><code>model_name='microsoft/phi-2'
+device_map = {"": 0}
+original_model = AutoModelForCausalLM.from_pretrained(model_name, 
+                                                      device_map=device_map,
+                                                      quantization_config=bnb_config,
+                                                      trust_remote_code=True,
+                                                      use_auth_token=True)
+tokenizer = AutoTokenizer.from_pretrained(model_name,trust_remote_code=True,padding_side="left",add_eos_token=True,add_bos_token=True)
+tokenizer.pad_token = tokenizer.eos_token</code></pre>
+			<br>
+			<li>Setting up PEFT for fine tuning: </li>
+			<pre class="compact-code"><code>model = prepare_model_for_kbit_training(model)
+config = LoraConfig(
+    r=32,
+    lora_alpha=32,
+    target_modules=[
+        'q_proj',
+        'k_proj',
+        'v_proj',
+        'dense'
+    ],
+    bias="none",
+    lora_dropout=0.05,
+    task_type="CAUSAL_LM",
+)
+model.gradient_checkpointing_enable()
+peft_model = get_peft_model(model, config)</code></pre>
+			<br>
+			<li>Creating training instance and training the model: </li>
+			<pre class="compact-code"><code>peft_training_args = TrainingArguments(
+    output_dir = output_dir,
+    warmup_steps=1,
+    per_device_train_batch_size=1,
+    gradient_accumulation_steps=4,
+    max_steps=1000,
+    learning_rate=2e-4,
+    optim="paged_adamw_8bit",
+    logging_steps=25,
+    logging_dir="./logs",
+    save_strategy="steps",
+    save_steps=25,
+    evaluation_strategy="steps",
+    eval_steps=25,
+    do_eval=True,
+    gradient_checkpointing=True,
+    report_to="none",
+    overwrite_output_dir = 'True',
+    group_by_length=True,
+)
+
+peft_model.config.use_cache = False
+
+peft_trainer = transformers.Trainer(
+    model=peft_model,
+    train_dataset=train_dataset,
+    eval_dataset=eval_dataset,
+    args=peft_training_args,
+    data_collator=transformers.DataCollatorForLanguageModeling(tokenizer, mlm=False),
+)</code></pre>
+			<li>Inferencing with the model: </li>
+			<pre class="compact-code"><code>def generate_response(prompt, max_length=100):
+    inputs = tokenizer(prompt, return_tensors="pt").to("cuda")
+    with torch.no_grad():
+        output = peft_model.generate(**inputs, max_length=max_length)
+    response = tokenizer.decode(output[0], skip_special_tokens=True)
+    return response
+
+prompt = "What to do when feeling unmotivated?"
+response = generate_response(prompt)
+print("Generated Response:", response)</code></pre>
+			</ul>
+			<h2>References and useful resources:</h2>
+			<ol>
+				<li><a href="https://arxiv.org/pdf/2305.14314">QLoRA Paper</a></li>
+				<li><a href="https://medium.com/@dillipprasad60/qlora-explained-a-deep-dive-into-parametric-efficient-fine-tuning-in-large-language-models-llms-c1a4794b1766">QLoRA: Fine-Tuning Large Language Models (LLM’s)</a></li>
+				<li><a href="https://www.datacamp.com/tutorial/mastering-low-rank-adaptation-lora-enhancing-large-language-models-for-efficient-adaptation">Mastering Low-Rank Adaptation (LoRA): Enhancing Large Language Models for Efficient Adaptation</a></li>
+				<li><a href="https://huggingface.co/blog/4bit-transformers-bitsandbytes">Making LLMs even more accessible with bitsandbytes, 4-bit quantization and QLoRA</a></li>
+			</ol>
+		</div>
+    </div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js"></script></body>
+</html>

@@ -73,3 +73,13 @@ body {
     border-bottom: none;
 }
 
+.blog-link {
+    text-decoration: none;
+    color: inherit;
+    display: block;
+}
+
+.blog-link:hover {
+    color: blue;
+}
+
