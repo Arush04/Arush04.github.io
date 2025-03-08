@@ -91,3 +91,10 @@ h2 {
   .compact-code code {
     font-family: Consolas, Monaco, 'Andale Mono', monospace;
   }
+
+.responsive-img {
+    max-width: 100%;
+    height: auto;
+    display: block;
+    margin: 0 auto; /* Center align */
+}
