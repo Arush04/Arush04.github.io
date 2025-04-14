@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blogs</title>
+    <link rel="stylesheet" href="css/styles_blog_pages.css">
+	<link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism.min.css" rel="stylesheet">	<script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="nav-buttons left">
+                <a href="blogs.html" class="home-btn">
+                    <img src="images/back_arrow.ico" alt="Back" class="back-icon">
+                </a>
+            </div>
+            <h1>Finetune LLM with QLoRA</h1>
+        </div>
+		<br> 
+		<div class="image-container" align="center">
+			<img src="images/blogs/lora_diffusion_head.webp" alt="Finetune Overview", class="responsive-img", style="width: 200px;">
+		</div>
+        
+		<div class="blog-content">
+            <h2>Introduction</h2>
+            <p>Models come in two types : pretrained, and fine-tunes.
+			Many applications in natural language processing rely on adapting one large-scale, pre-trained language model to multiple downstream applications. Such adaptation is usually done via fine-tuning, which updates all the parameters of the pre-trained model. The major downside of fine-tuning is that the new model contains as many parameters as in the original model. As larger models are trained every few months, this changes from a mere inconvenience to a critical deployment challenge.</p>
+			<p>A LoRA is a sort of finetune that is very very specific. It's so efficient it can be done in half an hour on a consumer grade gaming computer. It works by inserting a smaller number of new weights into the model and only these are trained. This makes training with LoRA much faster, memory-efficient, and produces smaller model weights (a few hundred MBs), which are easier to store and share.</p>
+
+			<div class="image-container" align="center">
+				<img src="images/blogs/lora_arch_over.png" alt="LoRA Overview" class="responsive-img">
+			</div>
+
+			<h2>Implementation</h2>
+			<ul>
+			<li>Loading dataset:</li>
+			<p>I am using the dataset from <strong>alfredplpl/anime-with-caption-cc0</strong> but since it is very big I have scrapped 2000 images from this and saved them in this dataset<strong> sharmaarush/text_to_anime</strong></p>
+			<pre class="compact-code"><code>from datasets import load_dataset
+dataset = load_dataset("sharmaarush/text_to_anime")</code></pre>
+			<br>
+			<li>Installing the dependencies and downloading the training script from source</li>
+			<pre class="compact-code"><code>!git clone https://github.com/huggingface/diffusers
+!pip install /content/diffusers
+!pip install -r /content/diffusers/examples/text_to_image/requirements.txt
+!wget https://raw.githubusercontent.com/huggingface/diffusers/main/examples/text_to_image/train_text_to_image_lora.py
+
+# Initialize an 🤗 Accelerate environment:
+from accelerate.utils import write_basic_config
+write_basic_config()</code></pre>
+			<br>
+			<li>Setting up environment variables for the training script</li>
+			<pre class="compact-code"><code>import os
+os.environ["MODEL_NAME"] = "runwayml/stable-diffusion-v1-5"
+os.environ["OUTPUT_DIR"] = "/content/drive/MyDrive/finetune_lora/anime"
+os.environ["DATASET_NAME"] = "sharmaarush/text_to_anime"
+os.environ["HUB_MODEL_ID"] = "anime-lora"</code></pre>
+			<br>
+			<li>Executing the script</li>
+			<pre class="compact-code"><code>!accelerate launch --mixed_precision="bf16" train_text_to_image_lora.py \
+  --pretrained_model_name_or_path=$MODEL_NAME \
+  --dataset_name=$DATASET_NAME \
+  --dataloader_num_workers=2 \
+  --resolution=512 \
+  --center_crop \
+  --random_flip \
+  --train_batch_size=1 \
+  --gradient_accumulation_steps=4 \
+  --max_train_steps=500 \
+  --learning_rate=1e-04 \
+  --max_grad_norm=1 \
+  --lr_scheduler="cosine" \
+  --lr_warmup_steps=0 \
+  --output_dir=$OUTPUT_DIR \
+  --checkpointing_steps=250 \
+  --caption_column="prompt" \
+  --validation_prompt="1girl, school uniform, flower garden background" \
+  --seed=1337 \
+  --allow_tf32</code></pre>
+			<br>
+			<li>Upload your model to hugging face</li>
+			<pre class="compact-code"><code>from huggingface_hub import create_repo, upload_folder
+
+repo_name = "anime_lora"
+create_repo(repo_name, private=False)
+
+upload_folder(
+    folder_path="/content/drive/MyDrive/finetune_lora/anime",
+    repo_id=f"{'sharmaarush'}/{repo_name}",
+    commit_message="Initial upload of fine-tuned text-to-image LoRA model"
+)</code></pre>
+			<li>Loading your LoRA Model</li>
+			<pre class="compact-code"><code># First load the base model 
+from diffusers import AutoPipelineForText2Image
+import torch
+
+pipeline = AutoPipelineForText2Image.from_pretrained("runwayml/stable-diffusion-v1-5", torch_dtype=torch.float16).to("cuda")
+
+# Then load your lora weights
+pipeline.load_lora_weights("sharmaarush/anime_lora", weight_name="pytorch_lora_weights.safetensors")</code></pre>
+			<li>Inferencing your Model</li>
+			<pre class="compact-code"><code>image = pipeline("1girl, :3, animal ear fluff, animal ears, apple, arms up, black skirt, black thighhighs, blue shirt, blush, braid, brown eyes, brown hair, collared shirt, cookie, food, fruit, garter straps, hand up, long hair, long sleeves, looking at viewer, looking to the side, multicolored hair, open mouth, pink background, school uniform, shirt, simple background, skirt, smile, streaked hair, thighhighs, very long hair, zettai ryouiki").images[0]
+image</code></pre>
+			<li>Result</li>
+			<br>
+			<div class="image-container" align="center">
+			<img src="images/blogs/lora_result.png" alt="Finetune Overview", class="responsive-img", style="width: 200px;">
+			</ul>
+			<p>Check out the full code <a href="https://colab.research.google.com/drive/1h2XjBOUpKfyOc8KVkr9If0zMvG0qROz6?usp=sharing">here</a></p>
+			<h2>References and useful resources:</h2>
+			<ol>
+				<li><a href="https://arxiv.org/pdf/2106.09685">LORA: LOW-RANK ADAPTATION OF LARGE LANGUAGE MODELS</a></li>
+				<li><a href="https://huggingface.co/docs/diffusers/en/training/lora">LoRA </a></li>
+			</ol>
+		</div>
+    </div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js"></script></body>
+</html>
