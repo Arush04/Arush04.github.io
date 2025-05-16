@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Blogs</title>
+<link rel="stylesheet" href="css/styles_blog_pages.css">
+<link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism.min.css" rel="stylesheet">	<script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+<script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+</head>
+<body>
+<div class="container">
+	<div class="header">
+		<div class="nav-buttons left">
+			<a href="blogs.html" class="home-btn">
+				<img src="images/back_arrow.ico" alt="Back" class="back-icon">
+			</a>
+		</div>
+		<h1>Fully Sharded Data Parallel (FSDP)</h1>
+	</div>
+	<br>
+	<div class="image-container" align="center">
+		<img src="images/blogs/fsdp_header.png" alt="Header FSDP", class="responsive-img", style="width: 500px;">
+	</div>
+    <br>
+	<div class="blog-content">
+		<h2>Overview</h2>
+
+		<p> In this blog I attempt to explain FSDP, highlighting its significance in optimizing memory usage and scaling training across multiple GPUs.</p>
+
+		<p>I then explain how FSDP works, detailing the process of parameter sharding, gradient synchronization, and checkpointing. A dedicated section compares FSDP1 vs FSDP2, outlining the limitations of the original implementation and the improvements introduced in FSDP2.</p>
+        <p>Finally, I demonstrate how to implement FSDP2 using HuggingFace’s Accelerate library, providing practical guidance for integrating it with QLoRA during fine-tuning.</p>
+
+        <h2>Introduction</h2>
+		<p>Training AI models at a large scale is a challenging task that requires a lot of compute power and resources. It also comes with considerable engineering complexity to handle the training of these very large models.</p>
+
+		<p>Fully Sharded Data Parallel (FSDP) makes it easier for us to efficiently train very large neural network models that would otherwise exceed the memory capacity of a single GPU. FSDP achieves this by sharding (splitting) model parameters, optimizer states, and gradients across multiple GPUs, rather than replicating the entire model on each device as in traditional data parallelism.</p>
+
+		<p>This approach hence brings us the following benefits:</p>
+		<ul>
+		<li>Enabling Training of Larger Models</li>
+		<li>Improves Memory Efficency</li>
+		<li>Optimizes Computational Resources</li>
+		<li>Flexible and Scalable</li>
+		<li>Reduces Redundancy (Don't need full model copies on each device)</li>
+		</ul>
+		<h2>How FSDP works ?</h2>
+
+		<p>When training with FSDP, the GPU memory footprint is smaller than when training with <a href="https://docs.pytorch.org/tutorials/intermediate/ddp_tutorial.html">DDP</a> across all workers. This makes the training of some very large models feasible by allowing larger models or batch sizes to fit on device. This comes with the cost of increased communication volume. The communication overhead is reduced by internal optimizations like overlapping communication and computation.</p>
+
+        <div class="image-container" align="center">
+                    <img src="images/blogs/fsdp_overview.png" alt="FSDP Overview", class="responsive-img", style="width: 500px;">
+        </div>
+        <br>
+		<p>At a high level FSDP works as follows:</p>
+		<p>In constructor</p>
+		<ul>
+		<li>Shard model parameters and each rank only keeps its own shard</li>
+        </ul>
+        <p>In forward path</p>
+        <ul>
+        <li>Run all_gather to collect all shards from all ranks to recover the full parameter in this FSDP unit</li>
+        <li>Run forward computation</li>
+        <li>Discard parameter shards it has just collected</li>
+		</ul>
+		<p>In backward path</p>
+		<ul>
+		<li>Run all_gather to collect all shards from all ranks to recover the full parameter in this FSDP unit</li>
+		<li>Run backward computation</li>
+		<li>Run reduce_scatter to sync gradients</li>
+		<li>Discard parameters</li>
+		</ul>
+
+        <p>An implmentation of FSDP can  be found here: <a href="https://docs.pytorch.org/tutorials/intermediate/FSDP_tutorial.html#how-to-use-fsdp">How to use FSDP</a></p>
+
+        <h2>FSDP1 Vs FSDP2</h2>
+
+        <p>First, we want to understand how FSDP1 and FSDP2 work internally to understand the differences between them. This also helps us understand the limitations of FSDP1 and how FSDP2 solves them.</p>
+
+        <p>Lets visualize this and understand what the problem is....</p>
+        <p>Lst's say we have a single layer that contains 3 linear layers and is wrapped using <strong>FSDP1</strong> to be sharded accross 2 GPUs</p>
+        <h3>FSDP1</h3>
+        <div class="image-container" align="center">
+                    <img src="images/blogs/FSDP1.png" alt="FSDP1", class="responsive-img", style="width: 500px;">
+        </div>
+        <p>The whole Layer gets flattened into a single FlatParameter, which then gets sharded across ranks. However, this FlatParameter complicates applying different behaviors to individual parameters within the FlatParameter, e.g. parameter freezing, parameter casting, etc., hurting composability, and it complicates the internal implementation, e.g. making state dict logic thousands of lines and requiring additional communications.</p>
+
+        <h3>FSDP2</h3>
+
+        <div class="image-container" align="center">
+                    <img src="images/blogs/FSDP2.png" alt="FSDP2", class="responsive-img", style="width: 500px;">
+        </div>
+        <p>FSDP2 represents sharded parameters as <b>DTensors</b> sharded on dim-0, allowing for easy manipulation of individual parameters, communication-free sharded state dicts, and a simpler meta-device initialization flow.</p>
+        <p>FSDP2 implements an improved memory management system that achieves lower and deterministic GPU memory by avoiding <b>recordStream</b> and does so without any CPU synchronization.</p>
+
+        <h2>Implementing QLoRA+FSDP2</h2>
+        <p>The following steps outline the implementation of FSDP2 with QLoRA for fine-tuning a large language model (LLM). For details on QLoRA, please refer to my earlier blog <a href="blog_qlora.html">here</a>.</p>
+        <p>I will use HuggingFace's Accelerate library for Implementing FSDP2.</p>
+        <p>Setting up <b>FullyShardedDataParallelPlugin.</b></p>
+        <pre class="compact-code"><code>from accelerate import FullyShardedDataParallelPlugin, Accelerator
+from torch.distributed.fsdp.fully_sharded_data_parallel import FullOptimStateDictConfig, FullStateDictConfig
+
+fsdp_plugin = FullyShardedDataParallelPlugin(
+    fsdp_version=2,
+    state_dict_config=FullStateDictConfig(offload_to_cpu=True, rank0_only=False),
+    optim_state_dict_config=FullOptimStateDictConfig(offload_to_cpu=True, rank0_only=False),
+    cpu_offload=True,
+    activation_checkpointing=True,
+
+)
+accelerator = Accelerator(fsdp_plugin=fsdp_plugin)</code></pre>
+
+        <p>Upon completing the QLoRA setup, include the following section prior to defining the training configurations.</p>
+        <pre class="compact-code"><code>model = accelerator.prepare_model(model)
+
+# Enable model parallelism if multiple GPUs are available
+if torch.cuda.device_count() > 1:
+    model.is_parallelizable = True
+    model.model_parallel = True</code></pre>
+
+        <p>Complete code for QLoRA+FSDP2 can be found <a href="https://github.com/Arush04/qlora_tuned_model/blob/main/qlora_fsdp2.py">here</a>.</p>
+
+		<h2>References and useful resources:</h2>
+			<ol>
+                <li><a href="https://arxiv.org/pdf/2304.11277">PyTorch FSDP Paper</a></li>
+				<li><a href="https://docs.pytorch.org/tutorials/intermediate/FSDP_tutorial.html">Getting Started with Fully Sharded Data Parallel(FSDP)</a></li>
+				<li><a href="https://www.youtube.com/watch?v=UvRl4ansfCg&t=2257s">Slaying OOMs with PyTorch FSDP and torchao</a></li>
+				<li><a href="https://huggingface.co/docs/accelerate/en/concept_guides/fsdp1_vs_fsdp2">FSDP1 vs FSDP2</a></li>
+			</ol>
+	</div>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js"></script></body>
+</html>
