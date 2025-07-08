@@ -29,7 +29,7 @@
 		<p> In this blog I attempt to explain FSDP, highlighting its significance in optimizing memory usage and scaling training across multiple GPUs.</p>
 
 		<p>I then explain how FSDP works, detailing the process of parameter sharding, gradient synchronization, and checkpointing. A dedicated section compares FSDP1 vs FSDP2, outlining the limitations of the original implementation and the improvements introduced in FSDP2.</p>
-        <p>Finally, I demonstrate how to implement FSDP2 using HuggingFace’s Accelerate library, providing practical guidance for integrating it with QLoRA during fine-tuning.</p>
+        <p>Finally, I demonstrate how to implement FSDP2 using PyTorch, providing practical guidance for integrating it with QLoRA during fine-tuning.</p>
 
         <h2>Introduction</h2>
 		<p>Training AI models at a large scale is a challenging task that requires a lot of compute power and resources. It also comes with considerable engineering complexity to handle the training of these very large models.</p>
@@ -93,33 +93,62 @@
         <p>FSDP2 represents sharded parameters as <b>DTensors</b> sharded on dim-0, allowing for easy manipulation of individual parameters, communication-free sharded state dicts, and a simpler meta-device initialization flow.</p>
         <p>FSDP2 implements an improved memory management system that achieves lower and deterministic GPU memory by avoiding <b>recordStream</b> and does so without any CPU synchronization.</p>
 
-        <h2>Implementing QLoRA+FSDP2</h2>
-        <p>The following steps outline the implementation of FSDP2 with QLoRA for fine-tuning a large language model (LLM). For details on QLoRA, please refer to my earlier blog <a href="blog_qlora.html">here</a>.</p>
-        <p>I will use HuggingFace's Accelerate library for Implementing FSDP2.</p>
-        <p>Setting up <b>FullyShardedDataParallelPlugin.</b></p>
-        <pre class="compact-code"><code>from accelerate import FullyShardedDataParallelPlugin, Accelerator
-from torch.distributed.fsdp.fully_sharded_data_parallel import FullOptimStateDictConfig, FullStateDictConfig
-
-fsdp_plugin = FullyShardedDataParallelPlugin(
-    fsdp_version=2,
-    state_dict_config=FullStateDictConfig(offload_to_cpu=True, rank0_only=False),
-    optim_state_dict_config=FullOptimStateDictConfig(offload_to_cpu=True, rank0_only=False),
-    cpu_offload=True,
-    activation_checkpointing=True,
-
+        <h2>Implementing LoRA+FSDP2</h2>
+        <p>The following steps outline the implementation of FSDP2 with LoRA for fine-tuning a large language model (LLM). For details on LoRA, please refer to my earlier blog <a href="blog_qlora.html">here</a>.</p>
+		<p>Setting up <b>Model and LoRA configurations</b>
+        <pre class="compact-code"><code>model = AutoModelForCausalLM.from_pretrained(
+	base_model,
+	torch_dtype=torch.bfloat16,
+	trust_remote_code=True,
+	use_cache=False,
 )
-accelerator = Accelerator(fsdp_plugin=fsdp_plugin)</code></pre>
+model.gradient_checkpointing_enable()
+# ---- LoRA Configuration ----
+lora_config = LoraConfig(
+	r=8,
+	lora_alpha=16,
+	target_modules=["q_proj", "v_proj", "k_proj", "o_proj"],
+	lora_dropout=0.05,
+	bias="none",
+	task_type="CAUSAL_LM",
+)
+model = get_peft_model(model, lora_config)
+model = model.to(torch.bfloat16)
+for param in model.parameters():
+	param.requires_grad = False
 
-        <p>Upon completing the QLoRA setup, include the following section prior to defining the training configurations.</p>
-        <pre class="compact-code"><code>model = accelerator.prepare_model(model)
+for name, param in model.named_parameters():
+	if "lora" in name.lower():
+		param.requires_grad = True</code></pre>
+		<p>To optimize memory usage, we load the model using the <code>bfloat16</code> data type instead of the default <code>float32</code>. This significantly reduces memory consumption while maintaining numerical stability, especially on hardware that supports <code>bfloat16</code> natively. For a deeper understanding of the differences between <code>float32</code>, <code>float16</code>, and <code>bfloat16</code>, you can refer to <a href="https://www.linkedin.com/pulse/float32-vs-float16-bfloat16-damien-benveniste-av3oc/" target="_blank">this article</a>. Additionally, gradient checkpointing is enabled after loading the model to further optimize memory efficiency. This technique reduces memory usage during backpropagation by storing only a subset of activations and recomputing the rest on the fly.</p>
+		<p>To enable parameter-efficient fine-tuning, we configure and apply LoRA (Low-Rank Adaptation) to the model. LoRA allows us to inject trainable low-rank matrices into specific layers (such as <code>"q_proj", "k_proj", "v_proj",</code> and <code>"o_proj"</code>) of the transformer architecture. We use a rank of 8 and an alpha value of 16 for scaling. After applying LoRA using the <code>get_peft_model()</code> function, we convert the model to <code>bfloat16</code> precision for efficient memory usage. We then freeze all base model parameters and selectively unfreeze only the LoRA layers. This setup ensures that only a small subset of parameters is updated during training, drastically reducing memory and compute requirements without compromising performance.</p>
+		<pre class="compact-code"><code>world_size = dist.get_world_size()
+device_mesh = init_device_mesh("cuda", (world_size,))
+fsdp_kwargs = {
+	"mp_policy": MixedPrecisionPolicy(
+		param_dtype=torch.bfloat16,
+		reduce_dtype=torch.bfloat16,
+	),
+	"offload_policy": OffloadPolicy()
+}
 
-# Enable model parallelism if multiple GPUs are available
-if torch.cuda.device_count() > 1:
-    model.is_parallelizable = True
-    model.model_parallel = True</code></pre>
-
-        <p>Complete code for QLoRA+FSDP2 can be found <a href="https://github.com/Arush04/qlora_tuned_model/blob/main/qlora_fsdp2.py">here</a>.</p>
-
+from transformers.models.llama.modeling_llama import LlamaDecoderLayer
+for module in model.modules():
+	if isinstance(module, LlamaDecoderLayer):
+		fully_shard(module, mesh=device_mesh, **fsdp_kwargs)
+    fully_shard(model, mesh=device_mesh, **fsdp_kwargs)</code></pre>
+		<p>To enable memory-efficient distributed training, we apply Fully Sharded Data Parallel (FSDP2) using PyTorch’s native APIs. We begin by initializing a device mesh across all available GPUs, which defines how model parameters are partitioned across devices. A MixedPrecisionPolicy is then configured to use bfloat16 for both parameter storage and inter-device communication, enabling faster computation and lower memory consumption. We also include an OffloadPolicy to optionally move parameters or optimizer states to the CPU when necessary. Since FSDP2 requires all model parameters to be in the same data type, we explicitly convert the model to bfloat16 before wrapping it. The sharding is first applied selectively to each LlamaDecoderLayer, providing fine-grained control, and then the entire model is wrapped with fully_shard() to finalize the setup. This allows efficient fine-tuning of large models across multiple GPUs with significantly reduced memory overhead.</p>
+        <p>Complete code for LoRA+FSDP2 can be found <a href="https://github.com/Arush04/qlora_tuned_model/blob/main/fsdp2_pytorch.py">here</a>.</p>
+		<h2>Summary</h2>
+		<p>When fine-tuning large language models like LLaMA-3.1-8B, GPU memory becomes a major bottleneck. This is where FSDP2 (Fully Sharded Data Parallel v2) comes into play. FSDP2 shards the model’s parameters and optimizer states across multiple GPUs, dramatically reducing per-GPU memory usage while enabling training at scale. In our setup, we use LoRA (Low-Rank Adaptation) to fine-tune the model in a parameter-efficient manner — updating only a small fraction of weights (e.g., ~50MB). By freezing the base model and training only the LoRA layers, we drastically cut down the size of gradients and optimizer states.</p>
+		<p>Lets say for example we have a 4 GPU cluster, then a 16GB model in bfloat16 would be split across the GPUs with each GPU holding only 4GB of parameters. Even after accounting for communication and gradient synchronization overhead, total memory per GPU stays in the ~6–8GB range — far below what would be required for full fine-tuning without FSDP (which could exceed 90GB per GPU).</p>
+		<p>In summary, FSDP2 + LoRA allows:</p>
+		<ul>
+		  <li>Fine-tuning of large models with reduced memory overhead</li>
+		  <li>Training only LoRA layers while sharding the rest</li>
+		  <li>Feasibility of training large models even on modest GPU setups</li>
+		</ul>
+		</p>This makes FSDP2 a powerful tool for scalable, resource-efficient model fine-tuning.</p>
 		<h2>References and useful resources:</h2>
 			<ol>
                 <li><a href="https://arxiv.org/pdf/2304.11277">PyTorch FSDP Paper</a></li>
