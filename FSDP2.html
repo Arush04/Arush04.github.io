@@ -136,7 +136,7 @@ from transformers.models.llama.modeling_llama import LlamaDecoderLayer
 for module in model.modules():
 	if isinstance(module, LlamaDecoderLayer):
 		fully_shard(module, mesh=device_mesh, **fsdp_kwargs)
-    fully_shard(model, mesh=device_mesh, **fsdp_kwargs)</code></pre>
+fully_shard(model, mesh=device_mesh, **fsdp_kwargs)</code></pre>
 		<p>To enable memory-efficient distributed training, we apply Fully Sharded Data Parallel (FSDP2) using PyTorch’s native APIs. We begin by initializing a device mesh across all available GPUs, which defines how model parameters are partitioned across devices. A MixedPrecisionPolicy is then configured to use bfloat16 for both parameter storage and inter-device communication, enabling faster computation and lower memory consumption. We also include an OffloadPolicy to optionally move parameters or optimizer states to the CPU when necessary. Since FSDP2 requires all model parameters to be in the same data type, we explicitly convert the model to bfloat16 before wrapping it. The sharding is first applied selectively to each LlamaDecoderLayer, providing fine-grained control, and then the entire model is wrapped with fully_shard() to finalize the setup. This allows efficient fine-tuning of large models across multiple GPUs with significantly reduced memory overhead.</p>
         <p>Complete code for LoRA+FSDP2 can be found <a href="https://github.com/Arush04/qlora_tuned_model/blob/main/fsdp2_pytorch.py">here</a>.</p>
 		<h2>Summary</h2>
