@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Blogs</title>
-<link rel="stylesheet" href="css/styles_blog_pages.css">
+<link rel="stylesheet" href="../css/styles_blog_pages.css">
 <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism.min.css" rel="stylesheet">	<script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
 <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
 </head>
@@ -12,15 +12,15 @@
 <div class="container">
 	<div class="header">
 		<div class="nav-buttons left">
-			<a href="blogs.html" class="home-btn">
-				<img src="images/back_arrow.ico" alt="Back" class="back-icon">
+			<a href="../blogs.html" class="home-btn">
+				<img src="../images/back_arrow.ico" alt="Back" class="back-icon">
 			</a>
 		</div>
 		<h1>Fully Sharded Data Parallel (FSDP)</h1>
 	</div>
 	<br>
 	<div class="image-container" align="center">
-		<img src="images/blogs/fsdp_header.png" alt="Header FSDP", class="responsive-img", style="width: 500px;">
+		<img src="../images/blogs/fsdp_header.png" alt="Header FSDP", class="responsive-img", style="width: 500px;">
 	</div>
     <br>
 	<div class="blog-content">
@@ -49,7 +49,7 @@
 		<p>When training with FSDP, the GPU memory footprint is smaller than when training with <a href="https://docs.pytorch.org/tutorials/intermediate/ddp_tutorial.html">DDP</a> across all workers. This makes the training of some very large models feasible by allowing larger models or batch sizes to fit on device. This comes with the cost of increased communication volume. The communication overhead is reduced by internal optimizations like overlapping communication and computation.</p>
 
         <div class="image-container" align="center">
-                    <img src="images/blogs/fsdp_overview.png" alt="FSDP Overview", class="responsive-img", style="width: 500px;">
+                    <img src="../images/blogs/fsdp_overview.png" alt="FSDP Overview", class="responsive-img", style="width: 500px;">
         </div>
         <br>
 		<p>At a high level FSDP works as follows:</p>
@@ -81,20 +81,20 @@
         <p>Lst's say we have a single layer that contains 3 linear layers and is wrapped using <strong>FSDP1</strong> to be sharded accross 2 GPUs</p>
         <h3>FSDP1</h3>
         <div class="image-container" align="center">
-                    <img src="images/blogs/FSDP1.png" alt="FSDP1", class="responsive-img", style="width: 500px;">
+                    <img src="../images/blogs/FSDP1.png" alt="FSDP1", class="responsive-img", style="width: 500px;">
         </div>
         <p>The whole Layer gets flattened into a single FlatParameter, which then gets sharded across ranks. However, this FlatParameter complicates applying different behaviors to individual parameters within the FlatParameter, e.g. parameter freezing, parameter casting, etc., hurting composability, and it complicates the internal implementation, e.g. making state dict logic thousands of lines and requiring additional communications.</p>
 
         <h3>FSDP2</h3>
 
         <div class="image-container" align="center">
-                    <img src="images/blogs/FSDP2.png" alt="FSDP2", class="responsive-img", style="width: 500px;">
+                    <img src="../images/blogs/FSDP2.png" alt="FSDP2", class="responsive-img", style="width: 500px;">
         </div>
         <p>FSDP2 represents sharded parameters as <b>DTensors</b> sharded on dim-0, allowing for easy manipulation of individual parameters, communication-free sharded state dicts, and a simpler meta-device initialization flow.</p>
         <p>FSDP2 implements an improved memory management system that achieves lower and deterministic GPU memory by avoiding <b>recordStream</b> and does so without any CPU synchronization.</p>
 
         <h2>Implementing LoRA+FSDP2</h2>
-        <p>The following steps outline the implementation of FSDP2 with LoRA for fine-tuning a large language model (LLM). For details on LoRA, please refer to my earlier blog <a href="blog_qlora.html">here</a>.</p>
+        <p>The following steps outline the implementation of FSDP2 with LoRA for fine-tuning a large language model (LLM). For details on LoRA, please refer to my earlier blog <a href="qlora.html">here</a>.</p>
 		<p>Setting up <b>Model and LoRA configurations</b>
         <pre class="compact-code"><code>model = AutoModelForCausalLM.from_pretrained(
 	base_model,

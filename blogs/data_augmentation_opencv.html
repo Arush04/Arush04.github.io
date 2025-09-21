@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Blogs</title>
-<link rel="stylesheet" href="css/styles_blog_pages.css">
+<link rel="stylesheet" href="../css/styles_blog_pages.css">
 <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism.min.css" rel="stylesheet">	<script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
 <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
 </head>
@@ -12,15 +12,15 @@
 <div class="container">
 	<div class="header">
 		<div class="nav-buttons left">
-			<a href="blogs.html" class="home-btn">
-				<img src="images/back_arrow.ico" alt="Back" class="back-icon">
+			<a href="../blogs.html" class="home-btn">
+				<img src="../images/back_arrow.ico" alt="Back" class="back-icon">
 			</a>
 		</div>
 		<h1>Explore Data Augmentation with OpenCV</h1>
 	</div>
 	<br>
 	<div class="image-container" align="center">
-		<img src="images/blogs/header_data_aug.png" alt="Header Data Augmentation", class="responsive-img", style="width: 500px;">
+		<img src="../images/blogs/header_data_aug.png" alt="Header Data Augmentation", class="responsive-img", style="width: 500px;">
 	</div>
 
 	<div class="blog-content">
@@ -76,7 +76,7 @@ transformed_image = transform(image)
 #View Image
 imshow(transformed_image, normalize=False)</code></pre>
 	<div class="image-container" align="center">
-				<img src="images/blogs/jpeg_compress.png" alt="Decrease Image Quality", class="responsive-img", style="width: 200px;">
+				<img src="../images/blogs/jpeg_compress.png" alt="Decrease Image Quality", class="responsive-img", style="width: 200px;">
 	</div>
 		<p>The <b>RandomJPEGCompression</b> class simulates image degradation by applying JPEG compression with a randomly selected quality factor. This quality factor is sampled from a defined range — in this case, between 30 and 100. Lower quality values introduce more compression artifacts, effectively degrading the image.</p>
 
@@ -127,7 +127,7 @@ def __call__(self, img):
 	radius = random.uniform(*self.radius_range)
 	return img.filter(ImageFilter.BoxBlur(radius))</code></pre>
 	<div class="image-container" align="center">
-		<img src="images/blogs/all_transformations.png" alt="All Augmentations", class="responsive-img", style="width: 600px;">
+		<img src="../images/blogs/all_transformations.png" alt="All Augmentations", class="responsive-img", style="width: 600px;">
 	</div>
 		<ul>
 		<li><b>AddGaussianNoise: </b>This class adds Gaussian noise to an image tensor with a randomly selected standard deviation. The noise simulates sensor or transmission distortions, making the model robust to real-world noisy inputs.</li>
@@ -146,7 +146,7 @@ AddGaussianNoise(min_std=5, max_std=50),
 RandomGaussianBlur(kernel_sizes=[3,5,7], sigma_range=(1.0,5.0)),
 ])</code></pre>
 		<div class="image-container" align="center">
-				<img src="images/blogs/transformation_final.png" alt="All Augmentations", class="responsive-img", style="width: 300px;">
+				<img src="../images/blogs/transformation_final.png" alt="All Augmentations", class="responsive-img", style="width: 300px;">
 		</div>
 
 		<p>To complete the effect of simulating aged or damaged photographs, we introduce one final augmentation technique: adding scratches and holes. These artifacts are common in old physical prints due to wear and tear over time.
@@ -187,7 +187,7 @@ cv.imwrite('old_scratched_pics/test_2.png', dst_rgb)
 plt.imshow(dst_rgb)</code></pre>
 
 	<div class="image-container" align="center">
-				<img src="images/blogs/weighted_sum.png" alt="Adding two Images", class="responsive-img", style="width: 600px;">
+				<img src="../images/blogs/weighted_sum.png" alt="Adding two Images", class="responsive-img", style="width: 600px;">
 		</div>
 		<h2>Summary:</h2>
 		<p>Data augmentation plays a crucial role in training models that are robust, generalizable, and capable of handling real-world imperfections. By simulating common defects found in old or degraded images—such as noise, blur, compression artifacts, and color shifts—we can effectively enhance our dataset and prepare our models for real restoration tasks. Leveraging OpenCV and PyTorch transforms, we can build a powerful synthetic data pipeline that not only enriches model training but also deepens our understanding of image processing techniques. Whether you're restoring vintage photos or tackling other computer vision challenges, thoughtful augmentation can be a game-changer.</p>

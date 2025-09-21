@@ -4,22 +4,22 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Blogs</title>
-    <link rel="stylesheet" href="css/styles_blog_pages.css">
+    <link rel="stylesheet" href="../css/styles_blog_pages.css">
 	<link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism.min.css" rel="stylesheet">	<script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
     <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
 <body>
     <div class="container">
         <div class="header">
             <div class="nav-buttons left">
-                <a href="blogs.html" class="home-btn">
-                    <img src="images/back_arrow.ico" alt="Back" class="back-icon">
+                <a href="../blogs.html" class="home-btn">
+                    <img src="../images/back_arrow.ico" alt="Back" class="back-icon">
                 </a>
             </div>
             <h1>Image Segmentation and Inpaint</h1>
         </div>
         
 		<div class="image-container" align="center">
-			<img src="images/blogs/segment_inpaint_head.png" alt="Segment_Inpaint Overview", class="responsive-img">
+			<img src="../images/blogs/segment_inpaint_head.png" alt="Segment_Inpaint Overview", class="responsive-img">
 		</div>
         
 		<div class="blog-content">
@@ -42,12 +42,12 @@ Let’s dive in! 🚀</p>
 				<li><b>Panoptic Segmentation: </b>combines both semantic and instance segmentation. Like semantic segmentation, panoptic segmentation is an approach that identifies, for every pixel, the belonging class. Moreover, like in instance segmentation, panoptic segmentation distinguishes different instances of the same class.</li>
 			</ul>
 			<div class="image-container" align="center">
-				<img src="images/blogs/types_of_segmentation.png" alt="Types of segmentation" class="responsive-img">
+				<img src="../images/blogs/types_of_segmentation.png" alt="Types of segmentation" class="responsive-img">
 			</div>
 			<br>
             <h2>U-Net Introduction and model training</h2>
 			<div class="image-container" align="center">
-				<img src="images/blogs/unet_arch.png" alt="NN Architecture" class="responsive-img">
+				<img src="../images/blogs/unet_arch.png" alt="NN Architecture" class="responsive-img">
 			</div>
 			<br>
 			<h3>U-Net :</h3>
@@ -226,7 +226,7 @@ def plot_example(image, mask, pred=None):
     plt.show()
 		</code></pre>
 			<div class="image-container" align="center">
-				<img src="images/blogs/preview_dataset.png" alt="Preview Dataset" class="responsive-img">
+				<img src="../images/blogs/preview_dataset.png" alt="Preview Dataset" class="responsive-img">
 			</div>
 			<p>I have split the dataset into training and validation and loaded them into train_loader and val_loader
 				The model is trained on 500 epochs. In each epoch, the model processes mini-batches from train_loader.
@@ -259,7 +259,7 @@ transform = transforms.Compose([
 			</ul>
 			<p>For the entire application code please refere here: <a href="https://huggingface.co/spaces/sharmaarush/Edit_background/tree/main">Background Edit Application</a></p>
 			<div class="image-container" align="center">
-				<img src="images/blogs/application.png" alt="Application Overview" class="responsive-img">
+				<img src="../images/blogs/application.png" alt="Application Overview" class="responsive-img">
 			</div>
 			<h2>Limitations and Improvements</h2>
 			<p>For this implementation, I have used smaller models to make the process more lightweight and efficient. However, this comes at the cost of precision, accuracy, and overall image quality. The results may not always be perfect, especially for fine details, edges, or complex backgrounds. By integrating high-resolution segmentation models and advanced inpainting architectures, the pipeline can produce more realistic and visually appealing results.</p>
