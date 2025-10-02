@@ -214,52 +214,54 @@ from torch.profiler import profile, ProfilerActivity, record_function</code></pr
 		</ul>
 		</p> 
 
-		<table border="1" cellpadding="6" cellspacing="0", align="center", style="margin: 0px auto;">
-		  <thead>
-			<tr>
-			  <th>Method</th>
-			  <th>Batch</th>
-			  <th>Device</th>
-			  <th>Latency (ms)</th>
-			  <th>Throughput (sps)</th>
-			  <th>Top-1 Accuracy</th>
-			</tr>
-		  </thead>
-		  <tbody>
-			<tr>
-			  <td>baseline</td>
-			  <td>16</td>
-			  <td>cuda</td>
-			  <td>578.58</td>
-			  <td>27.65</td>
-			  <td>12.5</td>
-			</tr>
-			<tr>
-			  <td>amp_autocast</td>
-			  <td>16</td>
-			  <td>cuda</td>
-			  <td>418.49</td>
-			  <td>38.23</td>
-			  <td>12.5</td>
-			</tr>
-			<tr>
-			  <td>torchscript</td>
-			  <td>16</td>
-			  <td>cuda</td>
-			  <td>634.74</td>
-			  <td>25.21</td>
-			  <td>12.5</td>
-			</tr>
-			<tr>
-			  <td>onnx_ort</td>
-			  <td>16</td>
-			  <td>cuda</td>
-			  <td>978.53</td>
-			  <td>16.35</td>
-			  <td>None</td>
-			</tr>
-		  </tbody>
-		</table>
+		<div style="overflow-x:auto; max-width:100%;">
+		  <table border="1" cellpadding="6" cellspacing="0" style="margin: 0 auto; border-collapse: collapse; width: 90%; max-width: 800px; text-align: center;">
+			<thead style="background-color: #f2f2f2;">
+			  <tr>
+				<th>Method</th>
+				<th>Batch</th>
+				<th>Device</th>
+				<th>Latency (ms)</th>
+				<th>Throughput (sps)</th>
+				<th>Top-1 Accuracy</th>
+			  </tr>
+			</thead>
+			<tbody>
+			  <tr>
+				<td>baseline</td>
+				<td>16</td>
+				<td>cuda</td>
+				<td>578.58</td>
+				<td>27.65</td>
+				<td>12.5</td>
+			  </tr>
+			  <tr>
+				<td>amp_autocast</td>
+				<td>16</td>
+				<td>cuda</td>
+				<td>418.49</td>
+				<td>38.23</td>
+				<td>12.5</td>
+			  </tr>
+			  <tr>
+				<td>torchscript</td>
+				<td>16</td>
+				<td>cuda</td>
+				<td>634.74</td>
+				<td>25.21</td>
+				<td>12.5</td>
+			  </tr>
+			  <tr>
+				<td>onnx_ort</td>
+				<td>16</td>
+				<td>cuda</td>
+				<td>978.53</td>
+				<td>16.35</td>
+				<td>None</td>
+			  </tr>
+			</tbody>
+		  </table>
+		</div>
 
 		<h2>References:</h2>
 		<ol>
